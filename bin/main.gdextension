@@ -1,0 +1,23 @@
+[configuration]
+
+entry_symbol = "library_init"
+compatibility_minimum = 4.1
+
+[libraries]
+
+macos.debug = "res://bin/libMain.framework"
+macos.release = "res://bin/libMain.framework"
+windows.debug.x86_32 = "res://bin/libMain.dll"
+windows.release.x86_32 = "res://bin/libMain.dll"
+windows.debug.x86_64 = "res://bin/libMain.dll"
+windows.release.x86_64 = "res://bin/libMain.dll"
+linux.debug.x86_64 = "res://bin/libMain.so"
+linux.release.x86_64 = "res://bin/libMain.so"
+linux.debug.arm64 = "res://bin/libMain.so"
+linux.release.arm64 = "res://bin/libMain.so"
+linux.debug.rv64 = "res://bin/libMain.so"
+linux.release.rv64 = "res://bin/libMain.so"
+android.debug.x86_64 = "res://bin/libMain.so"
+android.release.x86_64 = "res://bin/libMain.so"
+android.debug.arm64 = "res://bin/libMain.so"
+android.release.arm64 = "res://bin/libMain.so"

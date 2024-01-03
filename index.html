@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Loading...</title>
+    <link rel="icon" type="image/x-icon" href="https://tootr.auztin.net/favicon.ico">
+    <style>
+      html, body {
+        margin: 0px;
+        height: 100%;
+      }
+      body {
+        display: flex;
+      }
+    </style>
+    <script type="text/javascript">
+      let ws;
+      window.addEventListener("message", (event) => {
+        if (event.data.msg == "ws open") {
+          if (ws) {
+            ws.onopen = undefined;
+            ws.onclose = undefined;
+            ws.onmessage = undefined;
+            ws.close();
+            delete ws;
+          }
+          ws = new WebSocket("ws://"+location.host+"/tracker");
+          ws.onopen = (wsEvent) => event.source.postMessage({msg:"ws open"}, "*");
+          ws.onclose = (wsEvent) => event.source.postMessage({msg:"ws close"}, "*");
+          // ws.onerror = (wsEvent) => event.source.postMessage({msg:"ws error"}, "*");
+          ws.onmessage = (wsEvent) => event.source.postMessage({msg:"ws message", data:wsEvent.data}, "*");
+        }
+        if (event.data.msg == "ws close") {
+          ws.onopen = undefined;
+          ws.onclose = undefined;
+          ws.onmessage = undefined;
+          ws.close();
+          delete ws;
+          ws = undefined;
+        }
+        if (event.data.msg == "ws message") {
+          try {
+            ws.send(event.data.data);
+          } catch (error) {
+            event.source.postMessage({msg:"ws error"});
+          }
+        }
+        if (event.data.msg == "set title") document.title = event.data.data;
+      });
+    </script>
+  </head>
+  <body>
+    <iframe src="https://tootr.auztin.net/" style="border:0px;flex: 1 1 auto;"></iframe>
+  </body>
+</html>

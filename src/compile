@@ -1,0 +1,8 @@
+#!/bin/bash
+cd ..
+# scons platform=linux target_name=$NAME -j17 && godot
+# scons platform=linux target_name=$NAME -j17 && godot --debug-collisions
+
+# scons platform=windows target=template_release -j16 && scons platform=linux target=template_release -j16 && godot
+scons platform=linux target=template_release -j16 && godot
+echo 'Done.';

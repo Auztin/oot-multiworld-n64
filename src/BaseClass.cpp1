@@ -1,0 +1,16 @@
+#include "BaseClass.hpp"
+
+using namespace std;
+using namespace godot;
+
+BaseClass::BaseClass()  {
+
+}
+
+BaseClass::~BaseClass() {
+
+}
+
+void BaseClass::_bind_methods() {
+  // ClassDB::bind_method(D_METHOD("_ready"), &BaseClass::_ready);
+}
