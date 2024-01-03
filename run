@@ -1,2 +1,3 @@
 #!/bin/bash
-godot
+cd build/linux
+./oot-multiworld-n64.x86_64
