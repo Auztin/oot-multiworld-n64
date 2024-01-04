@@ -3,3 +3,5 @@
 /bin/*.so
 /*.mws
 /build/
+/src/*.os
+.sconsign.dblite
