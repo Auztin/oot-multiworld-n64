@@ -30,9 +30,47 @@
 using namespace std;
 using namespace godot;
 
+const uint8_t Flashcart::to_oot[256] = {
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xE4,0xEA,0xDF,
+  0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xAB,0xAC,0xAD,0xAE,0xAF,0xB0,0xB1,0xB2,0xB3,0xB4,0xB5,0xB6,0xB7,0xB8,0xB9,
+  0xBA,0xBB,0xBC,0xBD,0xBE,0xBF,0xC0,0xC1,0xC2,0xC3,0xC4,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,0xD0,0xD1,0xD2,0xD3,
+  0xD4,0xD5,0xD6,0xD7,0xD8,0xD9,0xDA,0xDB,0xDC,0xDD,0xDE,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,
+  0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF,0xDF
+};
+const uint8_t Flashcart::from_oot[256] = {
+  '0','1','2','3','4','5','6','7','8','9',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','A','B','C','D','E',
+  'F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U',
+  'V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k',
+  'l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',' ',
+  ' ',' ',' ',' ','-',' ',' ',' ',' ',' ','.',' ',' ',' ',' ',' ',
+  ' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '
+};
+
 Flashcart::Flashcart()  {
   add_user_signal("console", Array::make(makeDict("name", "text", "type", Variant::STRING)));
   add_user_signal("ootReady", Array::make(makeDict("name", "ready", "type", Variant::BOOL)));
+  add_user_signal("ootInventory", Array::make(makeDict("name", "inventory", "type", Variant::INT)));
   add_user_signal("ootOutgoing", Array::make(makeDict(
     "name", "player", "type", Variant::INT,
     "name", "location", "type", Variant::INT,
@@ -286,9 +324,7 @@ void Flashcart::sendLine(u8* line, u32 length) {
   }
 }
 
-void Flashcart::setAntiAlias(bool val) {
-  if (val) oot.settings |= SETTING_ANTIALIAS;
-  else oot.settings &= ~SETTING_ANTIALIAS;
+void Flashcart::sendSettings() {
   if (oot.CRC1 != 0 || oot.CRC2 != 0 || oot.id != 0) {
     u8 data[16] = MAGIC(data);
     data[4] = USB_CMD_SETTINGS;
@@ -300,10 +336,24 @@ void Flashcart::setAntiAlias(bool val) {
   }
 }
 
+void Flashcart::setAntiAlias(bool val) {
+  if (val) oot.settings |= SETTING_ANTIALIAS;
+  else oot.settings &= ~SETTING_ANTIALIAS;
+  sendSettings();
+}
+
 void Flashcart::setName(uint8_t id, std::string name) {
   if (!oot.ids.count(id) || oot.ids[id] != name) {
     oot.ids[id] = name;
     writeName(id, name);
+    emit_signal("saveChanged");
+  }
+}
+
+void Flashcart::setInventory(uint8_t id, uint32_t inventory) {
+  if (!oot.inventories.count(id) || oot.inventories[id] != inventory) {
+    oot.inventories[id] = inventory;
+    writeInventory(id, inventory);
     emit_signal("saveChanged");
   }
 }
@@ -339,23 +389,23 @@ void Flashcart::addItem(uint16_t id, uint32_t location, uint16_t item) {
 string Flashcart::ootEncode(string str, u8 len) {
   string ret;
   unsigned int i = 0;
-  for (; i < str.length() && i < len; i++) {
-    char c = str[i];
-    if (c >= '0' && c <= '9') c -= '0';
-    else if (c >= 'A' && c <= 'Z') c += 0x6A;
-    else if (c >= 'a' && c <= 'z') c += 0x64;
-    else if (c == '.') c = 0xEA;
-    else if (c == '-') c = 0xE4;
-    else if (c == ' ') c = 0xDF;
-    else continue;
-    ret += c;
-  }
+  for (; i < str.length() && i < len; i++) ret += (char)to_oot[str[i]];
   for (; i < len; i++) ret += (char)0xDF;
   return ret;
 }
 
+string Flashcart::ootDecode(uint32_t i, bool trim) {
+  string ret;
+  for (int shift = 0; shift <= 24; shift += 8) {
+    char c = from_oot[(i >> shift) & 0xFF];
+    if (trim && c == ' ') continue;
+    ret = c+ret;
+  }
+  return ret;
+}
+
 void Flashcart::writeName(u8 id, string name) {
-  u8 data[18] = MAGIC(data);
+  u8 data[16] = MAGIC(data);
   data[4] = USB_CMD_PLAYER;
   data[5] = id;
   cout << "[ PC] USB_CMD_PLAYER";
@@ -370,6 +420,21 @@ void Flashcart::writeName(u8 id, string name) {
   data[11] = name[5];
   data[12] = name[6];
   data[13] = name[7];
+  sendLine(data, 16);
+}
+
+void Flashcart::writeInventory(u8 id, u32 inventory) {
+  u8 data[16] = MAGIC(data);
+  data[4] = USB_CMD_INVENTORY;
+  data[5] = id;
+  cout << "[ PC] USB_CMD_INVENTORY";
+  printf(" id=0x%02x", data[5]);
+  printf(" inventory=0x%08x", inventory);
+  cout << endl;
+  data[6] = ((inventory & 0xFF000000) >> 24);
+  data[7] = ((inventory & 0x00FF0000) >> 16);
+  data[8] = ((inventory & 0x0000FF00) >> 8);
+  data[9] = ( inventory & 0x000000FF);
   sendLine(data, 16);
 }
 
@@ -410,7 +475,7 @@ void Flashcart::process(u8* data, u32 size) {
         break;
       }
       case USB_CMD_READY: {
-        u8 version = data[5];
+        u8 usb_version = data[5];
         u8 player_id = data[6];
         u16 internal_count = (data[7] << 8) | data[8];
         u32 crc1  = data[ 9] << 24;
@@ -421,14 +486,56 @@ void Flashcart::process(u8* data, u32 size) {
             crc2 |= data[14] << 16;
             crc2 |= data[15] << 8;
             crc2 |= data[16];
+        u32 name1  = data[17] << 24;
+            name1 |= data[18] << 16;
+            name1 |= data[19] << 8;
+            name1 |= data[20];
+        u32 name2  = data[21] << 24;
+            name2 |= data[22] << 16;
+            name2 |= data[23] << 8;
+            name2 |= data[24];
+        string name = ootDecode(name2, true);
+        name = ootDecode(name1, name == "")+name;
+        string rando_version;
+        rando_version.append((char*)(data+25));
+        string time;
+        time.append((char*)(data+61));
+        string worlds;
+        for (int i = 97; i < 97+0x10; i++) {
+          char c = data[i];
+          if (c == 0x00) break;
+          if (c == 0x20) {
+            worlds = "";
+            continue;
+          }
+          worlds += c;
+        }
+        uint8_t hash[5] = {
+          data[113],
+          data[114],
+          data[115],
+          data[116],
+          data[117],
+        };
+        u32 inventory  = data[118] << 24;
+            inventory |= data[119] << 16;
+            inventory |= data[120] << 8;
+            inventory |= data[121];
         cout << "[N64] USB_CMD_READY";
-        printf(" version=0x%02x", version);
+        printf(" usb_version=0x%02x", usb_version);
+        cout<< " rando_version="+rando_version << endl;
+        cout<< " time="+time << endl;
+        cout<< " worlds="+worlds << endl;
+        cout<< " hash=0x";
+        for (int i = 0; i < 5; i++) printf("%02x", *(hash+i));
+        cout<< " name="+name << endl;
         printf(" player_id=0x%02x", player_id);
         printf(" internal_count=0x%04x", internal_count);
         printf(" crc1=0x%08x", crc1);
         printf(" crc2=0x%08x", crc2);
+        printf(" inventory=0x%08x", inventory);
         cout << endl;
-        if (version == USB_VERSION) {
+        if (usb_version == USB_VERSION) {
           emit_signal("saveState");
           emit_signal("ootReady", false);
           oot.CRC1 = crc1;
@@ -436,6 +543,13 @@ void Flashcart::process(u8* data, u32 size) {
           emit_signal("loadState");
           oot.id = player_id;
           oot.internal_count = internal_count;
+          oot.name = name;
+          oot.ids[oot.id] = oot.name;
+          oot.version = rando_version;
+          oot.time = time;
+          oot.worlds = stoi(worlds);
+          oot.inventory = inventory;
+          for (int i = 0; i < 5; i++) oot.hash[i] = hash[i];
           emit_signal("saveChanged");
           emit_signal("saveState");
           u8 data[16] = MAGIC(data);
@@ -461,9 +575,23 @@ void Flashcart::process(u8* data, u32 size) {
           else oot.readyToReceive = true;
           // for (int i = 0; i < 0xFF; i++) writeName(i, "P"+std::to_string(i));
           for (auto&& [id, name] : oot.ids) writeName(id, name);
+          for (auto&& [id, inventory] : oot.inventories) writeInventory(id, inventory);
           emit_signal("ootReady", true);
           emit_signal("console", "OoT ready!");
           nextItem();
+        }
+        break;
+      }
+      case USB_CMD_INVENTORY: {
+        u8 player_id = data[5];
+        u32 inventory  = data[6] << 24;
+            inventory |= data[7] << 16;
+            inventory |= data[8] << 8;
+            inventory |= data[9];
+        if (oot.inventory != inventory) {
+          oot.inventory = inventory;
+          emit_signal("ootInventory", oot.inventory);
+          emit_signal("saveChanged");
         }
         break;
       }
@@ -807,6 +935,7 @@ void Flashcart::trackerActor(uint32_t id, uint32_t actor_id, uint32_t actor_num,
 bool Flashcart::saveNow(fstream* file) {
   if (!file) return false;
   file->put((char)oot.ids.size());
+  file->put((char)oot.inventories.size());
   // file->put((char)oot.sent.size());
   u32 size = oot.sent.size();
   file->write((char*)&size, 4);
@@ -816,6 +945,10 @@ bool Flashcart::saveNow(fstream* file) {
     file->put((char)id);
     file->put((char)name.length());
     file->write(name.c_str(), name.length());
+  }
+  for (auto&& [id, inventory] : oot.inventories) {
+    file->put((char)id);
+    file->write((char*)&inventory, 4);
   }
   for (auto&& [id, locations] : oot.sent) {
     u32 size = locations.size();
@@ -837,12 +970,14 @@ bool Flashcart::saveNow(fstream* file) {
 bool Flashcart::loadNow(fstream* file) {
   if (file == nullptr) {
     oot.ids.clear();
+    oot.inventories.clear();
     oot.sent.clear();
     oot.received.clear();
     return true;
   }
   if (!file) return false;
   u8 idsSize = file->get();
+  u8 inventoriesSize = file->get();
   u32 sentSize;
   file->read((char*)&sentSize, 4);
   u32 receivedSize;
@@ -853,6 +988,12 @@ bool Flashcart::loadNow(fstream* file) {
     char name[nameSize+1] = {0, };
     file->read(name, nameSize);
     oot.ids[id] = string(name, nameSize);
+  }
+  for (u8 i = 0; i < inventoriesSize; i++) {
+    u8 id = file->get();
+    u32 inventory;
+    file->read((char*)&inventory, 4);
+    oot.inventories[id] = inventory;
   }
   for (u32 i = 0; i < sentSize; i++) {
     u16 id;

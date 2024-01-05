@@ -37,7 +37,6 @@ public:
   struct {
     String server;
     uint16_t port = 0;
-    String name;
   } room;
   Flashcart* flashcart;
   Multiworld();
@@ -45,6 +44,7 @@ public:
   static void _bind_methods();
   void _process(const real_t);
   void setConnect(bool);
+  void inventoryChanged(uint32_t);
   void outgoingItem(uint32_t, uint32_t, uint32_t);
   bool saveNow(std::fstream*);
   bool loadNow(std::fstream*);

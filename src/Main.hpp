@@ -50,12 +50,8 @@ public:
   GridContainer* dialogGrid;
   Label* server;
   Label* port;
-  Label* roomName;
-  Label* name;
   LineEdit* serverBox;
   SpinBox* portBox;
-  LineEdit* roomNameBox;
-  LineEdit* nameBox;
   Button* save;
 
   bool isReady = false;

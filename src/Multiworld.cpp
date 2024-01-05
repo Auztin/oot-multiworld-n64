@@ -28,7 +28,7 @@ using namespace std;
 using namespace godot;
 
 Multiworld::Multiworld()  {
-  NET_VERSION = "1.0.3rc2";
+  NET_VERSION = "1.0.4";
   add_user_signal("console", Array::make(makeDict("name", "text", "type", Variant::STRING)));
   add_user_signal("saveState");
   add_user_signal("saveChanged");
@@ -50,6 +50,7 @@ void Multiworld::append_string(PackedByteArray& array, u8* str, u32 size) {
 void Multiworld::_bind_methods() {
   // ClassDB::bind_method(D_METHOD("_ready"), &Multiworld::_ready);
   // ClassDB::bind_method(D_METHOD("_process"), &Multiworld::_process);
+  ClassDB::bind_method(D_METHOD("inventoryChanged"), &Multiworld::inventoryChanged);
   ClassDB::bind_method(D_METHOD("outgoingItem"), &Multiworld::outgoingItem);
   ClassDB::bind_method(D_METHOD("ganonDefeated"), &Multiworld::ganonDefeated);
 }
@@ -99,6 +100,18 @@ void Multiworld::_process(const real_t delta) {
 void Multiworld::setConnect(bool allow_connect) {
   this->allow_connect = allow_connect;
   reconnect();
+}
+
+void Multiworld::inventoryChanged(uint32_t inventory) {
+  if (status == StreamPeerTCP::STATUS_CONNECTED) {
+    PackedByteArray data;
+    data.append(0x07);
+    data.append(((inventory & 0xFF000000) >> 24));
+    data.append(((inventory & 0x00FF0000) >> 16));
+    data.append(((inventory & 0x0000FF00) >> 8));
+    data.append(( inventory & 0x000000FF));
+    socket->put_data(data);
+  }
 }
 
 void Multiworld::outgoingItem(uint32_t player, uint32_t location, uint32_t item) {
@@ -162,8 +175,14 @@ void Multiworld::process() {
               u8 crc[8] = MAGIC(crc);
               PackedByteArray data;
               data.append(0x03);
-              data.append(room.name.length());
-              append_string(data, room.name);
+              data.append(flashcart->oot.version.length());
+              data.append(flashcart->oot.time.length());
+              data.append(flashcart->oot.worlds);
+              for (int i = 0; i < 5; i++) data.append(flashcart->oot.hash[i]);
+              String version(flashcart->oot.version.c_str());
+              String time(flashcart->oot.time.c_str());
+              append_string(data, version);
+              append_string(data, time);
               data.append(flashcart->oot.id);
               append_string(data, crc, 8);
               socket->put_data(data);
@@ -189,6 +208,13 @@ void Multiworld::process() {
             data.append(0x06);
             data.append(((flashcart->oot.received.size() & 0xFF00) >> 8));
             data.append( (flashcart->oot.received.size() & 0x00FF));
+            socket->put_data(data);
+            data.resize(0);
+            data.append(0x07);
+            data.append(((flashcart->oot.inventory & 0xFF000000) >> 24));
+            data.append(((flashcart->oot.inventory & 0x00FF0000) >> 16));
+            data.append(((flashcart->oot.inventory & 0x0000FF00) >> 8));
+            data.append(( flashcart->oot.inventory & 0x000000FF));
             socket->put_data(data);
           }
         }
@@ -302,6 +328,32 @@ void Multiworld::process() {
           }
         }
       }
+      else if (command == 0x07) {
+        if (cmd_state == 0) {
+          bytes = (char)data[i];
+          cmd_state = 1;
+        }
+        else if (cmd_state == 1) {
+          extra.clear();
+          extra.push_back((bytes[0] << 8) | data[i]);
+          bytes = "";
+          bytesNeeded = 4;
+          cmd_state = 2;
+        }
+        else if (cmd_state == 2) {
+          bytes += (char)data[i];
+          bytesNeeded--;
+          if (bytesNeeded == 0) {
+            u8 byte1 = bytes[0];
+            u8 byte2 = bytes[1];
+            u8 byte3 = bytes[2];
+            u8 byte4 = bytes[3];
+            u32 data = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
+            command = -1;
+            flashcart->setInventory(extra[0], data);
+          }
+        }
+      }
       else {
         emit_signal("console", "Disconnecting: Unknown command: "+String::num(command));
         setConnect(false);
@@ -338,10 +390,8 @@ void Multiworld::ganonDefeated() {
 bool Multiworld::saveNow(fstream* file) {
   if (!file) return false;
   file->put((char)room.server.length());
-  file->put((char)room.name.length());
   file->write((char*)&room.port, 2);
   file->write(room.server.ascii().get_data(), room.server.length());
-  file->write(room.name.ascii().get_data(), room.name.length());
   return file->good();
 }
 
@@ -349,19 +399,14 @@ bool Multiworld::loadNow(fstream* file) {
   if (file == nullptr) {
     room.server = "mw.auztin.net";
     room.port = 9001;
-    room.name = "";
     return true;
   }
   if (!file) return false;
   u8 serverSize = file->get();
-  u8 nameSize = file->get();
   file->read((char*)&room.port, 2);
   char server[serverSize+1] = {0, };
   file->read(server, serverSize);
   room.server = String(server);
-  char name[nameSize+1] = {0, };
-  file->read(name, nameSize);
-  room.name = String(name);
   if (file->fail()) {
     loadNow(nullptr);
     return false;

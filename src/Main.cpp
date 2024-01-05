@@ -5,6 +5,7 @@
 #include <v_box_container.hpp>
 #include <h_box_container.hpp>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 using namespace godot;
@@ -27,12 +28,8 @@ Main::Main()  {
   dialogGrid = memnew(GridContainer);
   server = memnew(Label);
   port = memnew(Label);
-  roomName = memnew(Label);
-  name = memnew(Label);
   serverBox = memnew(LineEdit);
   portBox = memnew(SpinBox);
-  roomNameBox = memnew(LineEdit);
-  nameBox = memnew(LineEdit);
   save = memnew(Button);
 
   flashcart = memnew(Flashcart);
@@ -42,6 +39,7 @@ Main::Main()  {
   flashcart->connect("console", Callable(this, "appendConsole"));
   flashcart->connect("ootReady", Callable(this, "ootReady"));
   flashcart->connect("ootReady", Callable(tracker, "ootReady"));
+  flashcart->connect("ootInventory", Callable(multiworld, "inventoryChanged"));
   flashcart->connect("ootOutgoing", Callable(multiworld, "outgoingItem"));
   flashcart->connect("trackerGanonDefeated", Callable(multiworld, "ganonDefeated"));
   flashcart->connect("trackerMem", Callable(tracker, "trackerMem"));
@@ -73,8 +71,6 @@ Main::Main()  {
 
   server->set_text("Server");
   port->set_text("Port");
-  roomName->set_text("Room");
-  name->set_text("Name");
   serverBox->set_max_length(0xFF);
   serverBox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
   serverBox->set_v_size_flags(Control::SIZE_EXPAND_FILL);
@@ -82,22 +78,12 @@ Main::Main()  {
   portBox->set_max(0xFFFF);
   portBox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
   portBox->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-  roomNameBox->set_max_length(0xFF);
-  roomNameBox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-  roomNameBox->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-  nameBox->set_max_length(13);
-  nameBox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-  nameBox->set_v_size_flags(Control::SIZE_EXPAND_FILL);
   save->set_text("Save");
   dialogGrid->set_columns(2);
   dialogGrid->add_child(server);
   dialogGrid->add_child(serverBox);
   dialogGrid->add_child(port);
   dialogGrid->add_child(portBox);
-  dialogGrid->add_child(roomName);
-  dialogGrid->add_child(roomNameBox);
-  dialogGrid->add_child(name);
-  dialogGrid->add_child(nameBox);
   dialogGrid->set_h_size_flags(Control::SIZE_EXPAND_FILL);
   dialogGrid->set_v_size_flags(Control::SIZE_EXPAND_FILL);
   auto vbox = memnew(VBoxContainer);
@@ -113,8 +99,6 @@ Main::Main()  {
   dialog->add_child(mcont);
   dialog->set_exclusive(true);
   serverBox->connect("text_submitted", Callable(this, "saveConnectInfo"));
-  roomNameBox->connect("text_submitted", Callable(this, "saveConnectInfo"));
-  nameBox->connect("text_submitted", Callable(this, "saveConnectInfo"));
   save->connect("pressed", Callable(this, "saveConnectInfo"));
   add_child(dialog);
 
@@ -347,7 +331,6 @@ void Main::checkConnectInfo(int result) {
       result == 0
       && multiworld->room.server != ""
       && multiworld->room.port != 0
-      && multiworld->room.name != ""
       && flashcart->oot.ids.count(flashcart->oot.id)
     ) {
       multiworld->setConnect(true);
@@ -355,13 +338,8 @@ void Main::checkConnectInfo(int result) {
     }
     serverBox->set_text(multiworld->room.server);
     portBox->set_value(multiworld->room.port);
-    roomNameBox->set_text(multiworld->room.name);
-    if (flashcart->oot.ids.count(flashcart->oot.id)) nameBox->set_text(flashcart->oot.ids[flashcart->oot.id].c_str());
-    else nameBox->set_text("");
     multiworld->setConnect(false);
     dialog->popup_centered();
-    if (roomNameBox->get_text() == "") roomNameBox->grab_focus();
-    else if (nameBox->get_text() == "") nameBox->grab_focus();
   }
   else {
     dialog->set_visible(false);
@@ -373,8 +351,6 @@ void Main::saveConnectInfo() {
   if (isReady) {
     multiworld->room.server = serverBox->get_text();
     multiworld->room.port = portBox->get_value();
-    multiworld->room.name = roomNameBox->get_text();
-    flashcart->setName(flashcart->oot.id, string(nameBox->get_text().ascii().get_data(), nameBox->get_text().length()));
     dialog->set_visible(false);
     saveChanged();
     checkConnectInfo(0);

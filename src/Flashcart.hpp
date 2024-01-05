@@ -14,6 +14,8 @@ namespace godot {
 class Flashcart : public Node {
   GDCLASS(Flashcart, Node)
 private:
+  static const uint8_t to_oot[256];
+  static const uint8_t from_oot[256];
   enum USB_COMMANDS {
     USB_CMD_NONE,
     USB_CMD_RESET_VARS,
@@ -22,6 +24,7 @@ private:
     USB_CMD_OUTGOING,
     USB_CMD_INCOMING,
     USB_CMD_PLAYER,
+    USB_CMD_INVENTORY,
     USB_CMD_SETTINGS,
     USB_CMD_PAUSE_WRITES,
     USB_CMD_PACKET_RECEIVED,
@@ -42,8 +45,10 @@ private:
   };
   enum SETTINGS {
     SETTING_ANTIALIAS = 0x01,
+    SETTING_MW_SEND_OWN_ITEMS = 0x02,
+    SETTING_MW_PROGRESSIVE_ITEMS = 0x04,
   };
-  const static uint8_t USB_VERSION = 2;
+  const static uint8_t USB_VERSION = 3;
   struct receivedEntry {
     uint16_t id;
     uint16_t item;
@@ -61,8 +66,10 @@ private:
   real_t sendTimeout = 0;
   bool packet_received = false;
   std::string ootEncode(std::string, uint8_t);
+  std::string ootDecode(uint32_t, bool);
   std::queue<sendPacket> sendPending;
   void writeName(uint8_t, std::string);
+  void writeInventory(uint8_t, uint32_t);
   void process(uint8_t*, uint32_t);
   void nextItem();
   void _d64Transfer(String, bool, uint8_t);
@@ -74,11 +81,18 @@ public:
   struct {
     uint32_t CRC1 = 0;
     uint32_t CRC2 = 0;
-    uint8_t settings = 0;
+    uint8_t settings = SETTING_MW_SEND_OWN_ITEMS | SETTING_MW_PROGRESSIVE_ITEMS;
     uint8_t id = 0;
     uint16_t internal_count = 0;
+    std::string version;
+    std::string time;
+    uint8_t worlds = 0;
+    uint8_t hash[5] = {0,};
+    std::string name;
+    uint32_t inventory = 0;
     bool readyToReceive = false;
     std::map<uint8_t, std::string> ids;
+    std::map<uint8_t, uint32_t> inventories;
     std::map<uint16_t, std::map<uint32_t, uint16_t> > sent;
     std::vector<receivedEntry> received;
     std::vector<uint8_t> repairList;
@@ -92,7 +106,9 @@ public:
   void sendReady();
   void _process(const real_t);
   void sendLine(uint8_t*, uint32_t);
+  void sendSettings();
   void setName(uint8_t, std::string);
+  void setInventory(uint8_t, uint32_t);
   void addRepairList(uint8_t);
   void addItem(uint16_t, uint32_t, uint16_t);
   bool saveNow(std::fstream*);
