@@ -583,11 +583,10 @@ void Flashcart::process(u8* data, u32 size) {
         break;
       }
       case USB_CMD_INVENTORY: {
-        u8 player_id = data[5];
-        u32 inventory  = data[6] << 24;
-            inventory |= data[7] << 16;
-            inventory |= data[8] << 8;
-            inventory |= data[9];
+        u32 inventory  = data[5] << 24;
+            inventory |= data[6] << 16;
+            inventory |= data[7] << 8;
+            inventory |= data[8];
         if (oot.inventory != inventory) {
           oot.inventory = inventory;
           emit_signal("ootInventory", oot.inventory);
