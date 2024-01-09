@@ -510,6 +510,7 @@ void Flashcart::process(u8* data, u32 size) {
           }
           worlds += c;
         }
+        if (worlds == "") worlds = "0";
         uint8_t hash[5] = {
           data[113],
           data[114],
