@@ -498,8 +498,6 @@ void Flashcart::process(u8* data, u32 size) {
         name = ootDecode(name1, name == "")+name;
         string rando_version;
         rando_version.append((char*)(data+25));
-        string time;
-        time.append((char*)(data+61));
         string worlds;
         for (int i = 97; i < 97+0x10; i++) {
           char c = data[i];
@@ -525,7 +523,6 @@ void Flashcart::process(u8* data, u32 size) {
         cout << "[N64] USB_CMD_READY";
         printf(" usb_version=0x%02x", usb_version);
         cout<< " rando_version="+rando_version << endl;
-        cout<< " time="+time << endl;
         cout<< " worlds="+worlds << endl;
         cout<< " hash=0x";
         for (int i = 0; i < 5; i++) printf("%02x", *(hash+i));
@@ -547,7 +544,6 @@ void Flashcart::process(u8* data, u32 size) {
           oot.name = name;
           oot.ids[oot.id] = oot.name;
           oot.version = rando_version;
-          oot.time = time;
           oot.worlds = stoi(worlds);
           oot.inventory = inventory;
           for (int i = 0; i < 5; i++) oot.hash[i] = hash[i];

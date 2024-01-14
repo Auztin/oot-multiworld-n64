@@ -85,7 +85,6 @@ public:
     uint8_t id = 0;
     uint16_t internal_count = 0;
     std::string version;
-    std::string time;
     uint8_t worlds = 0;
     uint8_t hash[5] = {0,};
     std::string name;

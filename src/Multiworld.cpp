@@ -176,13 +176,10 @@ void Multiworld::process() {
               PackedByteArray data;
               data.append(0x03);
               data.append(flashcart->oot.version.length());
-              data.append(flashcart->oot.time.length());
               data.append(flashcart->oot.worlds);
               for (int i = 0; i < 5; i++) data.append(flashcart->oot.hash[i]);
               String version(flashcart->oot.version.c_str());
-              String time(flashcart->oot.time.c_str());
               append_string(data, version);
-              append_string(data, time);
               data.append(flashcart->oot.id);
               append_string(data, crc, 8);
               socket->put_data(data);
