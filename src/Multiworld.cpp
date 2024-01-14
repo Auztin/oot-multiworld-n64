@@ -264,7 +264,7 @@ void Multiworld::process() {
         }
         else if (cmd_state == 1) {
           extra.clear();
-          extra.push_back((bytes[0] << 8) | data[i]);
+          extra.push_back(((u8)bytes[0] << 8) | data[i]);
           bytes = "";
           bytesNeeded = 4;
           cmd_state = 2;
@@ -335,7 +335,7 @@ void Multiworld::process() {
         }
         else if (cmd_state == 1) {
           extra.clear();
-          extra.push_back((bytes[0] << 8) | data[i]);
+          extra.push_back(((u8)bytes[0] << 8) | data[i]);
           bytes = "";
           bytesNeeded = 4;
           cmd_state = 2;
