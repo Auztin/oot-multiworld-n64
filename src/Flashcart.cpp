@@ -499,7 +499,7 @@ void Flashcart::process(u8* data, u32 size) {
         string rando_version;
         rando_version.append((char*)(data+25));
         string worlds;
-        for (int i = 97; i < 97+0x10; i++) {
+        for (int i = 61; i < 61+0x10; i++) {
           char c = data[i];
           if (c == 0x00) break;
           if (c == 0x20) {
@@ -510,16 +510,16 @@ void Flashcart::process(u8* data, u32 size) {
         }
         if (worlds == "") worlds = "0";
         uint8_t hash[5] = {
-          data[113],
-          data[114],
-          data[115],
-          data[116],
-          data[117],
+          data[77],
+          data[78],
+          data[79],
+          data[80],
+          data[81],
         };
-        u32 inventory  = data[118] << 24;
-            inventory |= data[119] << 16;
-            inventory |= data[120] << 8;
-            inventory |= data[121];
+        u32 inventory  = data[82] << 24;
+            inventory |= data[83] << 16;
+            inventory |= data[84] << 8;
+            inventory |= data[85];
         cout << "[N64] USB_CMD_READY";
         printf(" usb_version=0x%02x", usb_version);
         cout<< " rando_version="+rando_version << endl;
