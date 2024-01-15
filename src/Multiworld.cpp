@@ -28,7 +28,7 @@ using namespace std;
 using namespace godot;
 
 Multiworld::Multiworld()  {
-  NET_VERSION = "1.0.4";
+  NET_VERSION = "1.0.5";
   add_user_signal("console", Array::make(makeDict("name", "text", "type", Variant::STRING)));
   add_user_signal("saveState");
   add_user_signal("saveChanged");
